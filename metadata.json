@@ -1,0 +1,7 @@
+{
+	"uuid": "file-or-url-search-provider-2c77f3c8-9d11-462f-8b03-6924ea320d6b",
+	"name": "File or URL Search Provider",
+	"description": "Search and open files, directories, or URLs, from the overview. Basically what xdg-open can do.",
+	"url": "https://github.com/v0n/file-or-url-search-provider",
+	"shell-version": ["3.4"]
+}
