@@ -13,6 +13,7 @@ const Main = imports.ui.main;
 const Search = imports.ui.search;
 const Shell = imports.gi.Shell;
 const GLib = imports.gi.GLib;
+const Gio = imports.gi.Gio;
 const Util = imports.misc.util;
 
 function FileOrURLSearchProvider() {
@@ -42,12 +43,23 @@ FileOrURLSearchProvider.prototype = {
     },
 
     _getFiles: function(path) {
+        let fnc = new Gio.FilenameCompleter();
         let paths = [];
         path = path.replace(/^~/, GLib.get_home_dir());
 
         if (GLib.file_test(path, GLib.FileTest.EXISTS)) {
             paths.push(path);
         }
+
+        paths = paths.concat(fnc.get_completions(path));
+        /*
+         * FIXME
+         *
+         * FilenameCompleter work from within LookingGlass,
+         * but need to be called twice (?).
+         *
+         * NOTE maybe completer should go in a subsearch()?
+         */
 
         return paths;
     },
