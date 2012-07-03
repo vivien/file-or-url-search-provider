@@ -13,6 +13,7 @@ const Main = imports.ui.main;
 const Search = imports.ui.search;
 const Shell = imports.gi.Shell;
 const GLib = imports.gi.GLib;
+const Gio = imports.gi.Gio;
 const Util = imports.misc.util;
 
 function FileOrURLSearchProvider() {
@@ -24,32 +25,6 @@ FileOrURLSearchProvider.prototype = {
 
     _init: function(name) {
         Search.SearchProvider.prototype._init.call(this, "FILES & URLS");
-
-        this._appSys = Shell.AppSystem.get_default();
-        this._appWebBrowser = this._appSys.lookup_app('firefox.desktop');
-        this._appFiles = this._appSys.lookup_app('nautilus.desktop');
-    },
-
-    _getURLs: function(path) {
-        let urls = [];
-
-        if (path.match(/^[^~\/].*\.[a-z]{2,3}\b/)) {
-            let url = path.match(/^https?:\/\//) ? path : 'http://' + path;
-            urls.push(url);
-        }
-
-        return urls;
-    },
-
-    _getFiles: function(path) {
-        let paths = [];
-        path = path.replace(/^~/, GLib.get_home_dir());
-
-        if (GLib.file_test(path, GLib.FileTest.EXISTS)) {
-            paths.push(path);
-        }
-
-        return paths;
     },
 
     getSubsearchResultSet: function(previousResults, newTerms) {
@@ -57,12 +32,15 @@ FileOrURLSearchProvider.prototype = {
     },
 
     getInitialResultSet: function(terms) {
-        let that = this;
         let results = [];
 
         terms.forEach(function(term) {
-            results = results.concat(that._getFiles(term));
-            results = results.concat(that._getURLs(term));
+            let arg = term.replace(/^~/, GLib.get_home_dir());
+            let file = Gio.File.new_for_commandline_arg(arg);
+
+            if (file.query_exists(null)) {
+                results.push(file);
+            }
         });
 
         return results;
@@ -77,10 +55,11 @@ FileOrURLSearchProvider.prototype = {
     },
 
     _getResultMeta: function(result) {
-        let app = result.match(/^https?:\/\//) ? this._appWebBrowser : this._appFiles;
+        //let app = result.query_default_handler(null);
+        let app = Shell.AppSystem.get_default().lookup_app('firefox.desktop');
         let meta = {
             'id': result,
-            'name': result,
+            'name': result.get_uri(),
             'createIcon': function(size) {
                 return app.create_icon_texture(size);
             }
@@ -90,7 +69,8 @@ FileOrURLSearchProvider.prototype = {
     },
 
     activateResult: function(id) {
-        Util.spawn(['xdg-open', id]);
+        let app = id.query_default_handler(null);
+        app.launch([id], null);
     }
 };
 
